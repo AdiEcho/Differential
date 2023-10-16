@@ -40,6 +40,7 @@ from differential.utils.image import (
     ptpimg_upload,
     smms_upload,
     imgurl_upload,
+    tucang_upload,
     chevereto_api_upload,
     chevereto_username_upload,
     cloudinary_upload,
@@ -222,9 +223,21 @@ class Base(ABC, TorrnetBase, metaclass=PluginRegister):
             default=argparse.SUPPRESS,
         )
         parser.add_argument(
+            "--imgurl-hosting-url",
+            type=str,
+            help="Imgurl图床的地址",
+            default=argparse.SUPPRESS,
+        )
+        parser.add_argument(
             "--imgurl-api-key",
             type=str,
             help="Imgurl的API Key",
+            default=argparse.SUPPRESS,
+        )
+        parser.add_argument(
+            "--tucang-token",
+            type=str,
+            help="TuCang的Token",
             default=argparse.SUPPRESS,
         )
         parser.add_argument(
@@ -371,6 +384,7 @@ class Base(ABC, TorrnetBase, metaclass=PluginRegister):
         cloudinary_api_key: str = None,
         cloudinary_api_secret: str = None,
         imgurl_api_key: str = None,
+        tucang_token: str = None,
         smms_api_key: str = None,
         byr_authorization: str = None,
         byr_alternative_url: str = None,
@@ -415,6 +429,7 @@ class Base(ABC, TorrnetBase, metaclass=PluginRegister):
         self.cloudinary_api_key = cloudinary_api_key
         self.cloudinary_api_secret = cloudinary_api_secret
         self.imgurl_api_key = imgurl_api_key
+        self.tucang_token = tucang_token
         self.smms_api_key = smms_api_key
         self.byr_authorization = byr_authorization
         self.byr_alternative_url = byr_alternative_url
@@ -552,6 +567,8 @@ class Base(ABC, TorrnetBase, metaclass=PluginRegister):
                             img_url = imgurl_upload(
                                 img, self.imgurl_hosting_url, self.imgurl_api_key
                             )
+                        elif self.image_hosting == ImageHosting.TUCANG:
+                            img_url = tucang_upload(img,  self.tucang_token)
                         elif self.image_hosting == ImageHosting.SMMS:
                             img_url = smms_upload(img, self.smms_api_key)
                         elif self.image_hosting == ImageHosting.BYR:

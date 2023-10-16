@@ -26,7 +26,7 @@ BOOLEAN_ARGS = (
     "create_folder",
 )
 
-URL_SHORTENER_PATH = "https://lg.to"
+URL_SHORTENER_PATH = "https://b4.gs/s"
 
 
 class ImageHosting(Enum):
@@ -38,6 +38,7 @@ class ImageHosting(Enum):
     HDB = "hdb"
     IMGBOX = "imgbox"
     CLOUDINARY = "cloudinary"
+    TUCANG = "tucang"
 
     @staticmethod
     def parse(s: str):
@@ -59,4 +60,6 @@ class ImageHosting(Enum):
             return ImageHosting.IMGBOX
         elif s.lower() == "cloudinary":
             return ImageHosting.CLOUDINARY
+        elif s.lower() == "tucang":
+            return ImageHosting.TUCANG
         raise ValueError(f"不支持的图床：{s}")

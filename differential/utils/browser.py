@@ -5,11 +5,32 @@ from loguru import logger
 from differential.constants import URL_SHORTENER_PATH
 
 
+def b4gs_short(link: str):
+    data = {
+        "cmd": "add",
+        "keyPhrase": "",
+        "password": "s",
+        "url": link,
+    }
+    req = requests.post(f"{URL_SHORTENER_PATH}", json=data)
+    if req.ok:
+        return f"{URL_SHORTENER_PATH}/{req.json().get('key')}"
+    return link
+
+
+def l2gs_short(link: str):
+    data = {
+        "url": link,
+    }
+    req = requests.post(f"{URL_SHORTENER_PATH}/create", json=data)
+    if req.ok:
+        return req.json().get("link")
+    return link
+
+
 def open_link(link: str, use_short_url: bool = False):
     if use_short_url:
-        req = requests.post(f"{URL_SHORTENER_PATH}/new", {"url": link})
-        if req.ok:
-            link = f"{URL_SHORTENER_PATH}/dft/{req.text}"
+        b4gs_short(link)
 
     try:
         browser = webbrowser.get()

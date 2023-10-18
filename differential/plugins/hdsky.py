@@ -1,12 +1,19 @@
 import re
+import os
+import cn2an
 import requests
 import argparse
+from pathlib import Path
 from xpinyin import Pinyin
 from pymediainfo import MediaInfo
 from differential.plugins.nexusphp import NexusPHP
+from differential.plugins.bbdown import bili_download
+from differential.utils.torrent import make_torrent
 
 cleaned_re = r'\s+'
 chinese_mark_re = r"[\u3000-\u303f\uFF00-\uFFEF]"
+chinese_season_re = r"第\s*([一二三四五六七八九十百\d]+)\s*季"
+english_season_re = r"[Ss]eason[\s+\.]([0-9+])"
 p = Pinyin()
 
 
@@ -48,15 +55,21 @@ class HDSky(NexusPHP):
                             default=argparse.SUPPRESS)
         parser.add_argument('--custom_episode', type=str, help="自定义集数",
                             default=argparse.SUPPRESS)
+        parser.add_argument('--bilibili_url', type=str, help="bilibili视频链接",
+                            default=argparse.SUPPRESS)
+        parser.add_argument('--bilibili_save_path', type=str, help="bilibili视频保存路径",
+                            default=argparse.SUPPRESS)
         return parser
 
     def __init__(
             self,
-            custom_format_path: str = r"E:\HDSky\HDSWEB软件\MediaInfo_GUI_23.09\Plugin\Custom\HDSWEB.csv",
+            custom_format_path: str = r" HDSWEB.csv",
             generate_name: str = "false",
             custom_aka_name: str = "",
             custom_season: str = "",
             custom_episode: str = "",
+            bilibili_url: str = "",
+            bilibili_save_path: str = "",
             **kwargs,
     ):
         super().__init__(upload_url="https://hdsky.me/upload.php", **kwargs)
@@ -68,6 +81,31 @@ class HDSky(NexusPHP):
         self.custom_aka_name = custom_aka_name
         self.custom_season = custom_season
         self.custom_episode = custom_episode
+        self.bilibili_url = bilibili_url
+        self.bilibili_save_path = bilibili_save_path
+
+    def _prepare(self):
+        ptgen_retry = 2 * self.ptgen_retry
+        self._ptgen = self._get_ptgen()
+        while self._ptgen.get("failed") and ptgen_retry > 0:
+            self._ptgen = self._get_ptgen(ptgen_retry <= self.ptgen_retry)
+            ptgen_retry -= 1
+        if self.bilibili_url and self.bilibili_save_path:
+            self.bili_temp_download()
+            self._mediainfo = self._find_mediainfo()
+            self.bili_auto_download()
+        self._mediainfo = self._find_mediainfo()
+        if self.generate_nfo:
+            self._generate_nfo()
+        self._screenshots = self._get_screenshots()
+        if self.make_torrent:
+            make_torrent(
+                self.folder,
+                self.announce_url,
+                self.__class__.__name__,
+                self.reuse_torrent,
+                self.from_torrent,
+            )
 
     @property
     def title(self):
@@ -137,10 +175,20 @@ class HDSky(NexusPHP):
                 f'{before_screen_shot}\n'
                 f'{f"{enter}".join([f"{uploaded}" for uploaded in self._screenshots])}')
 
-    def generate_filename(self):
+    def generate_filename(self, gen_bbdown=False):
         filename = ""
+        season = ""
         if self._ptgen.get("chinese_title"):
-            filename += f"{self._ptgen.get('chinese_title').strip()}."
+            chinese_title = self._ptgen.get("chinese_title").strip()
+            seasons = re.findall(chinese_season_re, chinese_title)
+            if seasons:
+                if seasons[0].isdigit():
+                    season = seasons[0]
+                else:
+                    season = str(cn2an.cn2an(seasons[0]))
+            chinese_title = re.sub(chinese_season_re, "", chinese_title)
+            chinese_title = re.sub(cleaned_re, " ", chinese_title).strip()
+            filename += f"{chinese_title}."
 
         aka_name = None
         if self.custom_aka_name:
@@ -154,26 +202,45 @@ class HDSky(NexusPHP):
                     break
 
         if aka_name:
+            _seasons = re.findall(english_season_re, aka_name)
+            if _seasons and _seasons[0] == season:
+                aka_name = re.sub(english_season_re, "", aka_name).strip('.').strip()
             filename += f"{aka_name}."
         else:
             chinese_title = p.get_pinyin(self._ptgen.get('chinese_title').strip()).replace('-', '.').title()
             filename += f"{chinese_title}."
 
-        season = ""
         if self.custom_season:
             season = f"S0{self.custom_season.strip()}" \
                 if len(self.custom_season.strip()) == 1 \
                 else f"S{self.custom_season.strip()}"
+        elif season:
+            season = f"S0{season}" \
+                if len(season) == 1 \
+                else f"S{season}"
         elif self._ptgen.get("current_season"):
             season = f"S0{self._ptgen.get('current_season').strip()}" \
                 if len(self._ptgen.get('current_season').strip()) == 1 \
                 else f"S{self._ptgen.get('current_season').strip()}"
 
         episode = ""
-        if self.custom_episode:
-            episode = f"E0{self.custom_episode.strip()}" \
-                if len(self.custom_episode.strip()) == 1 \
-                else f"E{self.custom_episode.strip()}"
+        if not gen_bbdown:
+            if self.custom_episode:
+                episodes = self.custom_episode.split(",")
+                if len(episodes) == 1:
+                    episode = f"E0{self.custom_episode.strip()}" \
+                        if len(self.custom_episode.strip()) == 1 \
+                        else f"E{self.custom_episode.strip()}"
+                else:
+                    first = f"E0{episodes[0].strip()}" \
+                        if len(episodes[0].strip()) == 1 \
+                        else f"E{episodes[0].strip()}"
+                    last = f"E0{episodes[-1].strip()}" \
+                        if len(episodes[-1].strip()) == 1 \
+                        else f"E{episodes[-1].strip()}"
+                    episode = f"{first}-{last}"
+        else:
+            episode = "<replace_episode>"
 
         filename += f"{season}{episode}." if season and episode else (f"{season}." if season else "")
 
@@ -191,9 +258,11 @@ class HDSky(NexusPHP):
         filename += "-HDSWEB"
 
         filename = re.sub(chinese_mark_re, '', filename)
-        with open(f"{self._main_file.parent}/filename.txt", "w", encoding="utf-8") as f:
-            f.write(filename)
-        exit(0)
+        if self.generate_name:
+            with open(f"{self._main_file.parent}/filename.txt", "w", encoding="utf-8") as f:
+                f.write(filename)
+            exit(0)
+        return filename
 
     @property
     def video_type(self):
@@ -293,3 +362,17 @@ class HDSky(NexusPHP):
     @property
     def release_name(self):
         return self._main_file.stem
+
+    def bili_temp_download(self):
+        bili_download(self.bilibili_url, self.bilibili_save_path, f"--multi-file-pattern temp/1.mp4")
+        self.folder = Path(self.bilibili_save_path).joinpath("temp")
+
+    def bili_auto_download(self):
+        name = self.generate_filename(gen_bbdown=True)
+        pathname = name.replace("<replace_episode>", "")
+        filename = name.replace("<replace_episode>", "E<pageNumberWithZero>")
+        args = f'-p ALL --multi-file-pattern "{pathname}/{filename}"'
+        bili_download(self.bilibili_url, self.bilibili_save_path, args)
+        os.remove(os.path.join(self.bilibili_save_path, "temp", "1.mp4"))
+        self.folder.rmdir()
+        self.folder = Path(self.bilibili_save_path).joinpath(pathname)

@@ -42,6 +42,7 @@ from differential.utils.image import (
     imgurl_upload,
     tucang_upload,
     chevereto_api_upload,
+    chevereto_cookie_upload,
     chevereto_username_upload,
     cloudinary_upload,
 )
@@ -223,6 +224,18 @@ class Base(ABC, TorrnetBase, metaclass=PluginRegister):
             default=argparse.SUPPRESS,
         )
         parser.add_argument(
+            "--chevereto-cookie",
+            type=str,
+            help="如果自建Chevereto的API未开放，且无法获取username和password，请设置cookie和auth_token",
+            default=argparse.SUPPRESS,
+        )
+        parser.add_argument(
+            "--chevereto-token",
+            type=str,
+            help="如果自建Chevereto的API未开放，且无法获取username和password，请设置cookie和auth_token",
+            default=argparse.SUPPRESS,
+        )
+        parser.add_argument(
             "--imgurl-hosting-url",
             type=str,
             help="Imgurl图床的地址",
@@ -380,6 +393,8 @@ class Base(ABC, TorrnetBase, metaclass=PluginRegister):
         chevereto_api_key: str = None,
         chevereto_username: str = None,
         chevereto_password: str = None,
+        chevereto_cookie: str = None,
+        chevereto_token: str = None,
         cloudinary_cloud_name: str = None,
         cloudinary_api_key: str = None,
         cloudinary_api_secret: str = None,
@@ -424,6 +439,8 @@ class Base(ABC, TorrnetBase, metaclass=PluginRegister):
         self.hdbits_thumb_size = hdbits_thumb_size
         self.chevereto_username = chevereto_username
         self.chevereto_password = chevereto_password
+        self.chevereto_cookie = chevereto_cookie
+        self.chevereto_token = chevereto_token
         self.chevereto_api_key = chevereto_api_key
         self.cloudinary_cloud_name = cloudinary_cloud_name
         self.cloudinary_api_key = cloudinary_api_key
@@ -539,6 +556,13 @@ class Base(ABC, TorrnetBase, metaclass=PluginRegister):
                                     self.chevereto_hosting_url,
                                     self.chevereto_username,
                                     self.chevereto_password,
+                                )
+                            elif self.chevereto_cookie and self.chevereto_token:
+                                img_url = chevereto_cookie_upload(
+                                    img,
+                                    self.chevereto_hosting_url,
+                                    self.chevereto_cookie,
+                                    self.chevereto_token,
                                 )
                             else:
                                 logger.error(
@@ -695,18 +719,23 @@ class Base(ABC, TorrnetBase, metaclass=PluginRegister):
                 self.folder = folder
                 self._main_file = folder.joinpath(filename)
         else:
-            logger.info("目标为文件夹，正在获取最大的文件...")
+            logger.info("目标为文件夹，正在获取最大的文件或第一集文件...")
             biggest_size = -1
             biggest_file = None
+            e01_file = None
             for f in self.folder.glob("**/*"):
                 if f.is_file():
+                    if "E01." in f.name:
+                        e01_file = f
                     if f.suffix == ".bdmv":
                         has_bdmv = True
                     s = os.stat(f.absolute()).st_size
                     if s > biggest_size:
                         biggest_size = s
                         biggest_file = f
-            if biggest_file:
+            if e01_file:
+                self._main_file = e01_file
+            elif biggest_file:
                 self._main_file = biggest_file
         if self._main_file is None:
             logger.error("未在目标目录找到文件！")

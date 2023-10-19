@@ -1,0 +1,37 @@
+General;"RELEASE.NAME........: %FileName%\r\nRELEASE.DATE........: %File_Created_Date%
+DURATION............: %Duration/String3% (HH:MM:SS.MMM)
+RELEASE.SIZE........: %FileSize/String3%
+RELEASE.FORMAT......: %Format%
+OVERALL.BITRATE.....: %OverallBitRate/String%
+"
+Video;"RESOLUTION..........: %Width% x %Height% (%DisplayAspectRatio/String%)\r\nVIDEO.CODEC.........: $if(%Encoded_Library%,%Encoded_Library_Name% )%Format% %Format_Profile% @ %BitRate/String%$if(%HDR_Format%,
+HDR FORMAT..........: %HDR_Format/String%)$if(%MasteringDisplay_ColorPrimaries%,
+COLOR PRIMARIES.....: %colour_primaries% / %matrix_coefficients%
+DISPLAY COLOR.......: %MasteringDisplay_ColorPrimaries%
+DISPLAY_LUMINANCE...: %MasteringDisplay_Luminance%)
+BIT.DEPTH...........: %BitDepth/String%
+FRAME.RATE..........: %FrameRate% FPS
+Aspect.Ratio........: %AspectRatio%
+"
+Audio;Audio #%StreamKindID%............: $if(%BitRate_Mode%,%BitRate_Mode% )$if(%Language%,%Language/String% )$if(%Title%,%Title% )$if(%Format_Commercial_IfAny%,%Format_Commercial_IfAny% )%Format/String% $if( %Format%,%Format_Profile%)%Channel(s)/String% @ %BitRate/String% \r\n
+Text;SUBTiTLE.%StreamKindID%..........: $if(%Language%,%Language/String%) %Title% / %Codec/String%%Format_String%\r\n
+Chapters;Chapters #%StreamKindID%       : %Total% chapters\r\n\r\n
+File_Begin
+File_End;SOURCE..............: WEB-DL\r\nUPLOADER............: Anonymous@HDSWEB
+Page_Begin
+Page_Middle
+Page_End
+General_Begin
+General_End
+Video_Begin
+Video_Middle
+Video_End
+Audio_Begin
+Audio_Middle
+Audio_End
+Text_Begin
+Text_Middle
+Text_End
+Chapters_Begin
+Chapters_Middle
+Chapters_End

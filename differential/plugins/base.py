@@ -886,6 +886,9 @@ class Base(ABC, TorrnetBase, metaclass=PluginRegister):
             )
         return subtitle
 
+    def mediainfo(self):
+        return self._mediainfo
+
     @property
     def media_info(self):
         if self.is_bdmv:

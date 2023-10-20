@@ -71,43 +71,50 @@ class AutoFeed(TorrnetBase):
 
     @property
     def _raw_info(self) -> dict:
-        return {
+        _info = {
             # 填充类信息
-            'name': self.title, # 主标题
-            'small_descr': self.subtitle, # 副标题
-            'url': self.imdb_url, # imdb链接
-            'dburl': self.douban_url, # 豆瓣链接
-            'descr': self.description, # 简介
+            'name': self.title,  # 主标题
+            'small_descr': self.subtitle,  # 副标题
+            'url': self.imdb_url,  # imdb链接
+            'dburl': self.douban_url,  # 豆瓣链接
+            'descr': self.description,  # 简介
             'log_info': '',  # 音乐特有
-            'tracklist': '', # 音乐特有
-            'music_type': '', # 音乐特有
-            'music_media': '', # 音乐特有
-            'animate_info': '', # 动漫特有|针对北邮人北洋U2的命名方式
-            'anidb': '', # 动漫特有
-            'torrent_name': '', # 动漫辅助
-            'images': self.screenshots, #  截图
+            'tracklist': '',  # 音乐特有
+            'music_type': '',  # 音乐特有
+            'music_media': '',  # 音乐特有
+            'edition_info': '',  # 音乐特有
+            'music_name': '',  # 音乐特有
+            'music_author': '',  # 音乐特有
+            'animate_info': '',  # 动漫特有|针对北邮人北洋U2的命名方式
+            'anidb': '',  # 动漫特有
+            'torrent_name': '',  # 动漫辅助
+            'images': self.screenshots,  # 截图
+            'torrent_url': '',
 
             # 选择类信息
             'type': self.category,  # type:可取值——电影/纪录/体育/剧集/动画/综艺……
-            'source_sel': self.area, # 来源(地区)：可取值——欧美/大陆/港台/日本/韩国/印度……
+            'source_sel': self.area,  # 来源(地区)：可取值——欧美/大陆/港台/日本/韩国/印度……
             'standard_sel': self.resolution,  # 分辨率：可取值——4K/1080p/1080i/720p/SD
             'audiocodec_sel': self.audio_codec,  # 音频：可取值——AAC/AC3/DTS…………
-            'codec_sel': self.video_codec, # 编码：可取值——H264/H265……
-            'medium_sel': self.video_type, # 媒介：可取值——web-dl/remux/encode……
+            'codec_sel': self.video_codec,  # 编码：可取值——H264/H265……
+            'medium_sel': self.video_type,  # 媒介：可取值——web-dl/remux/encode……
 
             # 其他
-            'origin_site': '', # 记录源站点用于跳转后识别
-            'origin_url': '', # 记录源站点用于跳转后识别
-            'golden_torrent': False, # 主要用于皮转柠檬, 转过去之后会变成字符串
-            'mediainfo_cmct': '', # 适用于春天的info
-            'imgs_cmct': '', # 适用于春天的截图
-            'full_mediainfo': get_full_mediainfo(self.plugin._mediainfo), # 完整的mediainfo有的站点有长短两种，如：铂金家、猫、春天
-            'subtitles': [], # 针对皮转海豹，字幕
+            'origin_site': '',  # 记录源站点用于跳转后识别
+            'origin_url': '',  # 记录源站点用于跳转后识别
+            'golden_torrent': False,  # 主要用于皮转柠檬, 转过去之后会变成字符串
+            'mediainfo_cmct': '',  # 适用于春天的info
+            'imgs_cmct': '',  # 适用于春天的截图
+            'full_mediainfo': get_full_mediainfo(self.plugin.mediainfo),  # 完整的mediainfo有的站点有长短两种，如：铂金家、猫、春天
+            'subtitles': [],  # 针对皮转海豹，字幕
 
-            'youtube_url': '', # 用于发布iTS
+            'youtube_url': '',  # 用于发布iTS
             'ptp_poster': '',  # 用于发布iTS
-            'comparisons': '', # 用于海豹
+            'comparisons': '',  # 用于海豹
         }
+        if getattr(self, "team", None):
+            _info["team_sel"] = self.team
+        return _info
 
     @property
     def info(self) -> str:

@@ -5,6 +5,11 @@ class TorrnetBase:
 
     @property
     @abstractmethod
+    def mediainfo(self):
+        raise NotImplementedError()
+
+    @property
+    @abstractmethod
     def title(self):
         raise NotImplementedError()
 

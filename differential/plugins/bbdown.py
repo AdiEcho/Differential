@@ -33,9 +33,12 @@ def bili_download(url, path, args):
            f'-e "hevc,av1,avc" -q "8K 超高清, 1080P 高码率, HDR 真彩, 杜比视界" '
            f'--allow-pcdn --simply-mux --skip-cover {args}')
     p = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, cwd=path)
+    for i in iter(p.stdout.readline, b""):
+        line = decode(i)
+        print(line, end='')
+    p.wait()
     out, err = p.communicate()
     if p.returncode == 0:
-        out = decode(out)
         # res = re.findall(r, out)
         logger.info(f"下载{url}成功，请检查文件夹{path}")
     else:
@@ -47,7 +50,7 @@ def cmd_run():
     if not os.path.exists('temp'):
         os.mkdir('temp')
     cmd = ('bbdown https://www.bilibili.com/bangumi/play/ep779129 '
-           '-e "hevc,av1,avc" -q "8K 超高清, 1080P 高码率, HDR 真彩, 杜比视界" '
+           '-e "hevc,avc" -q "8K 超高清, 1080P 高码率, HDR 真彩, 杜比视界" '
            '--allow-pcdn')
     p = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, cwd='temp')
     out, err = p.communicate()

@@ -138,3 +138,8 @@ class TorrnetBase:
     @abstractmethod
     def comparisons(self):
         raise NotImplementedError()
+
+    @property
+    @abstractmethod
+    def team(self):
+        raise NotImplementedError()

@@ -1119,6 +1119,10 @@ class Base(ABC, TorrnetBase, metaclass=PluginRegister):
         return []
 
     @property
+    def team(self):
+        return ""
+
+    @property
     def easy_upload_torrent_info(self):
         return EasyUpload(plugin=self).torrent_info
 

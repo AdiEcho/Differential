@@ -455,44 +455,6 @@ class HDSky(NexusPHP):
     def release_name(self):
         return self._main_file.stem
 
-    def auto_feed_info(self):
-        info = {
-            'name': 'Ancient Powers S01 2023 1080p WEB-DL AAC H265-HDSWEB',
-            'small_descr': '亘古文明/Ancients | 主演：萨利玛·伊克 拉姆 Salima Ikram',
-            'url': 'https://www.imdb.com/title/tt0133093/',
-            'dburl': 'https://movie.douban.com/subject/36406123',
-            'descr': '[img]https://img1.doubanio.com/view/photo/l_ratio_poster/public/p2892043049.jpg[/img]\n\n◎译\u3000\u3000名\u3000亘古文明 / Ancients\n◎片\u3000\u3000名\u3000Ancient Powers\n◎年\u3000\u3000代\u30002023\n◎产\u3000\u3000地\u3000英国 / 中国大陆\n◎类\u3000\u3000别\u3000纪录片 / 历史\n◎语\u3000\u3000言\u3000英语\n◎上映日期\u30002023-07-07(中国大 陆)\n◎IMDb链接\u3000https://www.imdb.com/title//\n◎豆瓣评分\u30008.0/10 (356人评价)\n◎豆瓣链接\u3000https://movie.douban.com/subject/36406123/\n◎集\u3000\u3000数\u30006\n◎片\u3000\u3000长\u300050分钟\n◎演\u3000\u3000员\u3000萨利玛·伊克拉姆 Salima Ikram (id:1495243)\n\n◎简\u3000\u3000介\n\u3000\u3000纪录片展现出五大古老文明走过的非凡历程，以全新的角度回溯久远历史，融汇东西方世界的动人故事。这些悠远而强大的力量，在历史长河中不断应对社会、技术和现实挑战——贸易、战争和奇思妙想，曾将世界紧密相连，而当面对同一难题时，各地区却采取了截然不同的对策。如今，逝去的世界得益于先进科技、考古学发现和精美CGI的加持，得以重现于世——这是一部关于策略和运气的史诗。\n\n[img]https://m.hdsky.me/adv/hdsweb_logo.png[/img]\n[color=Blue][b]【影片参数】[/b][/color]\n[quote][b][size=3][color=Blue]亘古文明.Ancient.Powers.S01E01.2023.1080p.WEB-DL.AAC.H265-HDSWEB[/color][/size][/b]\n\n[b]General Information: [/b][font=monospace]\n\nRELEASE.NAME........: 亘古文明.Ancient.Powers.S01E01.2023.1080p.WEB-DL.AAC.H265-HDSWEB\r\nRELEASE.DATE........: UTC 2023-10-20 14:36:31.647\r\nDURATION............: 00:47:59.083 (HH:MM:SS.MMM)\r\nRELEASE.SIZE........: 666 MiB\r\nRELEASE.FORMAT......: MPEG-4\r\nOVERALL.BITRATE.....: 1 941 kb/s\r\nRESOLUTION..........: 1920 x 1080 (16:9)\r\nVIDEO.CODEC.........: HEVC Main@L5@Main @ 1 730 kb/s\r\nBIT.DEPTH...........: 8 bits\r\nFRAME.RATE..........: 25.000 FPS\r\nAspect.Ratio........: 1.778\r\nAudio #0............: CBR AAC LC 2 channels @ 204 kb/s \r\nSOURCE..............: WEB-DL\r\nUPLOADER............: Anonymous@HDSWEB\n[/font][/quote]\n[b][color=Blue]【截图赏析】[/color][/b]\n[img]https://img.tucang.cc/api/image/show/5e524afcb9382e5db788995a86b1df47[/img]\n[img]https://img.tucang.cc/api/image/show/5b4bf7b7f26f30eb296c3c2085eb3482[/img]\n[img]https://img.tucang.cc/api/image/show/95c532b25d69513b965c3e3051c1e0da[/img]\n[img]https://img.tucang.cc/api/image/show/38d7f097588bcaa243925a0d9106990c[/img]\n[img]https://img.tucang.cc/api/image/show/11d52f1a0f0d26d21c59da4660ef9ee6[/img]',
-            'log_info': '',
-            'tracklist': '',
-            'music_type': '',
-            'music_media': '',
-            'animate_info': '',
-            'anidb': '',
-            'torrent_name': '',
-            'images': ['https://img.tucang.cc/api/image/show/5e524afcb9382e5db788995a86b1df47',
-                       'https://img.tucang.cc/api/image/show/5b4bf7b7f26f30eb296c3c2085eb3482',
-                       'https://img.tucang.cc/api/image/show/95c532b25d69513b965c3e3051c1e0da',
-                       'https://img.tucang.cc/api/image/show/38d7f097588bcaa243925a0d9106990c',
-                       'https://img.tucang.cc/api/image/show/11d52f1a0f0d26d21c59da4660ef9ee6'],
-            'type': '电影',
-            'source_sel': '大陆',
-            'standard_sel': '1080p',
-            'audiocodec_sel': 'AAC',
-            'codec_sel': 'H265',
-            'medium_sel': 'web-dl',
-            'origin_site': '',
-            'origin_url': '',
-            'golden_torrent': False,
-            'mediainfo_cmct': '',
-            'imgs_cmct': '',
-            'full_mediainfo': 'General\nComplete name: I:\\HDSky\\电视剧发种\\亘古文明.Ancient.Powers.S01.2023.1080p.WEB-DL.AAC.H265-HDSWEB\\亘古文明.Ancient.Powers.S01E01.2023.1080p.WEB-DL.AAC.H265-HDSWEB.mp4\nFormat: MPEG-4\nFile Size: 666 MiB\nDuration: 47 min 59 s\nOverall bit rate: 1 941 kb/s\nWriting application: Lavf60.15.100\n\nVideo\nID: 1\nFormat: HEVC\nFormat/Info: High Efficiency Video Coding\nFormat profile: Main@L5@Main\nCodec ID: hev1\nDuration: 47 min 59 s\nBit rate: 1 730 kb/s\nWidth: 1 920 pixels\nHeight: 1 080 pixels\nDisplay aspect ratio: 16:9\nFrame rate mode: Constant\nFrame rate: 25.000 FPS\nColor space: YUV\nChroma subsampling: 4:2:0\nBit depth: 8 bits\nBits/(Pixel*Frame): 0.033\nStream size: 594 MiB (89%)\nColor range: Limited\nColor primaries: BT.709\nTransfer characteristics: BT.709\nMatrix coefficients: BT.709\n\nAudio\nID: 2\nFormat: AAC LC\nFormat/Info: Advanced Audio Codec Low Complexity\nCommercial name: AAC\nCodec ID: mp4a-40-2\nDuration: 47 min 59 s\nBit rate mode: Constant\nBit rate: 204 kb/s\nChannel(s): 2\nChannel layout: L R\nSampling rate: 48.0 kHz\nFrame rate: 46.875 FPS (1024 SPF)\nCompression mode: Lossy\nStream size: 70.1 MiB (11%)\nDefault: Yes\n\n',
-            'subtitles': [],
-            'youtube_url': '',
-            'ptp_poster': '',
-            'comparisons': ''
-        }
-        pass
-
     @property
     def douban_id(self):
         return self._ptgen.get("douban_id")

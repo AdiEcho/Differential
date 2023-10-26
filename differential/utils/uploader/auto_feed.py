@@ -25,7 +25,8 @@ class AutoFeed(TorrnetBase):
             'concert': '音乐',
             'movie': '电影',
             'documentary': '记录',
-            'tvPack': '剧集'
+            'tvPack': '剧集',
+            'tvUnfinished': '分集'
         }
         if category in category_map:
             return category_map[category]

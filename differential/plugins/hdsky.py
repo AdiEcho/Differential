@@ -66,6 +66,7 @@ class HDSky(NexusPHP):
         parser.add_argument('--bilibili_save_path', type=str, help="bilibili视频保存路径",
                             default=argparse.SUPPRESS)
         parser.add_argument("--custom_screenshot_path", type=str, help="截图保存路径", default=argparse.SUPPRESS)
+        parser.add_argument("--tv-unfinished", type=str, help="是否连载", default=argparse.SUPPRESS)
         return parser
 
     def __init__(
@@ -78,6 +79,7 @@ class HDSky(NexusPHP):
             bilibili_url: str = "",
             bilibili_save_path: str = "",
             custom_screenshot_path: str = "",
+            tv_unfinished: str = "",
             **kwargs,
     ):
         super().__init__(upload_url="https://hdsky.me/upload.php", **kwargs)
@@ -92,6 +94,7 @@ class HDSky(NexusPHP):
         self.bilibili_url = bilibili_url
         self.bilibili_save_path = bilibili_save_path
         self.custom_screenshot_path = custom_screenshot_path
+        self.tv_unfinished = tv_unfinished
 
     def _prepare(self):
         ptgen_retry = 2 * self.ptgen_retry
@@ -119,6 +122,24 @@ class HDSky(NexusPHP):
             os.remove(os.path.join(self.bilibili_save_path, "temp", f"{self.douban_id}.mp4"))
 
     @property
+    def category(self):
+        if self.tv_unfinished == "true" or self.tv_unfinished == "True" or self.tv_unfinished == "Yes":
+            return "tvUnfinished"
+        if "演唱会" in self._ptgen.get("tags", []) and "音乐" in self._ptgen.get(
+            "genre", []
+        ):
+            return "concert"
+        imdb_genre = self._imdb.get("genre", [])
+        if "Documentary" in imdb_genre:
+            return "documentary"
+        imdb_type = self._imdb.get("@type", "")
+        if imdb_type == "Movie":
+            return "movie"
+        if imdb_type == "TVSeries":
+            return "tvPack"
+        return imdb_type
+
+    @property
     def team(self):
         return "HDSWEB/网络视频小组"
 
@@ -135,6 +156,7 @@ class HDSky(NexusPHP):
         temp_name = re.sub(r"(?<=5|7)( )1(?=.*$)", ".1", temp_name)
         temp_name = re.sub(r'[\u4e00-\u9fa5]', '', temp_name).strip()
         temp_name = re.sub(chinese_mark_re, '', temp_name).strip()
+        temp_name = re.sub(cleaned_re, ' ', temp_name).strip()
         return temp_name
 
     @property
@@ -146,15 +168,19 @@ class HDSky(NexusPHP):
         else:
             subtitle = f"{'/'.join(self._ptgen.get('aka', []))}"
         if self.custom_episode:
-            subtitle += f" 第{self.custom_episode}集"
-        if self._ptgen.get("director"):
-            subtitle += (
-                f" | 导演：{'/'.join([d.get('name') for d in self._ptgen.get('director')])}"
-            )
-        if self._ptgen.get("writer"):
-            subtitle += (
-                f" | 编剧：{'/'.join([w.get('name') for w in self._ptgen.get('writer')])}"
-            )
+            subtitle += f" 第{'-'.join(self.custom_episode.split(','))}集"
+        if (self.custom_episode or self.custom_season or
+                len(re.findall(self._ptgen.get("chinese_title").strip(), chinese_season_re)) > 0):
+            pass
+        else:
+            if self._ptgen.get("director"):
+                subtitle += (
+                    f" | 导演：{'/'.join([d.get('name') for d in self._ptgen.get('director')])}"
+                )
+            if self._ptgen.get("writer"):
+                subtitle += (
+                    f" | 编剧：{'/'.join([w.get('name') for w in self._ptgen.get('writer')])}"
+                )
         if self._ptgen.get("cast"):
             subtitle += (
                 f" | 主演：{'/'.join([c.get('name') for c in self._ptgen.get('cast')[:3]])}"
@@ -279,6 +305,7 @@ class HDSky(NexusPHP):
                     season = str(cn2an.cn2an(seasons[0]))
             chinese_title = re.sub(chinese_season_re, "", chinese_title)
             chinese_title = re.sub(cleaned_re, " ", chinese_title).strip()
+            chinese_title = chinese_title.replace(" ", "")
             filename += f"{chinese_title}."
 
         aka_name = None

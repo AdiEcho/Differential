@@ -20,6 +20,7 @@ from differential.utils.mediainfo import (
 )
 
 cleaned_re = r'\s+'
+chinese_re = r'[\u4e00-\u9fa5]'
 chinese_mark_re = r"[\u3000-\u303f\uFF00-\uFFEF]"
 chinese_season_re = r"第\s*([一二三四五六七八九十百\d]+)\s*季"
 english_season_re = r"[Ss]eason[\s+\.]([0-9+])"
@@ -33,6 +34,14 @@ def is_all_english(strs):
         if i not in string.printable:
             return False
     return True
+
+
+def extract_chinese_name(full_name):
+    match = re.search(f"{chinese_re}+", full_name)
+    if match:
+        return match.group()
+    else:
+        return ""
 
 
 def process_aka_name(aka_name):
@@ -66,7 +75,9 @@ class HDSky(NexusPHP):
         parser.add_argument('--bilibili_save_path', type=str, help="bilibili视频保存路径",
                             default=argparse.SUPPRESS)
         parser.add_argument("--custom_screenshot_path", type=str, help="截图保存路径", default=argparse.SUPPRESS)
-        parser.add_argument("--tv-unfinished", type=str, help="是否连载", default=argparse.SUPPRESS)
+        parser.add_argument("--tv_unfinished", type=str, help="是否连载", default=argparse.SUPPRESS)
+        parser.add_argument("--use_folder_episode", type=str, help="是否基于文件夹内的集数生成副标题",
+                            default=argparse.SUPPRESS)
         return parser
 
     def __init__(
@@ -80,6 +91,7 @@ class HDSky(NexusPHP):
             bilibili_save_path: str = "",
             custom_screenshot_path: str = "",
             tv_unfinished: str = "",
+            use_folder_episode: str = "",
             **kwargs,
     ):
         super().__init__(upload_url="https://hdsky.me/upload.php", **kwargs)
@@ -91,6 +103,7 @@ class HDSky(NexusPHP):
         self.custom_aka_name = custom_aka_name
         self.custom_season = str(custom_season)
         self.custom_episode = custom_episode
+        self.use_folder_episode = use_folder_episode
         self.bilibili_url = bilibili_url
         self.bilibili_save_path = bilibili_save_path
         self.custom_screenshot_path = custom_screenshot_path
@@ -154,7 +167,7 @@ class HDSky(NexusPHP):
             self.folder.name if self.folder.is_dir() else self.folder.stem
         ).replace(".", " ")
         temp_name = re.sub(r"(?<=5|7)( )1(?=.*$)", ".1", temp_name)
-        temp_name = re.sub(r'[\u4e00-\u9fa5]', '', temp_name).strip()
+        temp_name = re.sub(chinese_re, '', temp_name).strip()
         temp_name = re.sub(chinese_mark_re, '', temp_name).strip()
         temp_name = re.sub(cleaned_re, ' ', temp_name).strip()
         return temp_name
@@ -163,16 +176,38 @@ class HDSky(NexusPHP):
     def subtitle(self):
         if not self._ptgen.get("site") == "douban":
             return ""
-        if "chinese_title" in self._ptgen:
-            subtitle = f"{'/'.join([self._ptgen.get('chinese_title')] + self._ptgen.get('aka', []))}"
-        else:
-            subtitle = f"{'/'.join(self._ptgen.get('aka', []))}"
-        if self.custom_episode:
-            subtitle += f" 第{'-'.join(self.custom_episode.split(','))}集"
-        if (self.custom_episode or self.custom_season or
+
+        if (self.custom_episode or self.custom_season or self.use_folder_episode or
                 len(re.findall(self._ptgen.get("chinese_title").strip(), chinese_season_re)) > 0):
-            pass
+            if "chinese_title" in self._ptgen:
+                subtitle = f"{self._ptgen.get('chinese_title')}"
+            else:
+                subtitle = f"{'/'.join(self._ptgen.get('aka', []))}"
+
+            if self.custom_episode:
+                subtitle += f" 第{'-'.join(self.custom_episode.split(','))}集"
+            elif self.use_folder_episode == "True" or self.use_folder_episode == "true":
+                seasons = []
+                episodes = []
+                for _, _, filenames in os.walk(self.folder):
+                    for filename in filenames:
+                        res = re.findall(r"\.S(\d+)E(\d+)\.", filename)
+                        if not res:
+                            continue
+                        if res[0][0] not in seasons:
+                            seasons.append(int(res[0][0]))
+                        if res[0][1] not in episodes:
+                            episodes.append(int(res[0][1]))
+                episodes = sorted(episodes)
+                if seasons[0] != 1:
+                    subtitle += f" 第 {str(seasons[0])} 季"
+                if len(episodes) > 1:
+                    subtitle += f" 第 {episodes[0]}-{episodes[-1]} 集"
         else:
+            if "chinese_title" in self._ptgen:
+                subtitle = f"{'/'.join([self._ptgen.get('chinese_title')] + self._ptgen.get('aka', []))}"
+            else:
+                subtitle = f"{'/'.join(self._ptgen.get('aka', []))}"
             if self._ptgen.get("director"):
                 subtitle += (
                     f" | 导演：{'/'.join([d.get('name') for d in self._ptgen.get('director')])}"
@@ -182,9 +217,10 @@ class HDSky(NexusPHP):
                     f" | 编剧：{'/'.join([w.get('name') for w in self._ptgen.get('writer')])}"
                 )
         if self._ptgen.get("cast"):
-            subtitle += (
-                f" | 主演：{'/'.join([c.get('name') for c in self._ptgen.get('cast')[:3]])}"
-            )
+            chinese_cast = [extract_chinese_name(c.get('name')) for c in self._ptgen.get('cast')[:3] if extract_chinese_name(c.get('name'))]
+            if "" in chinese_cast:
+                chinese_cast.remove("")
+            subtitle += f" | 主演：{' / '.join(chinese_cast)}"
         return subtitle
 
     @property

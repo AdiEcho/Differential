@@ -220,7 +220,7 @@ class HDSky(NexusPHP):
             chinese_cast = [extract_chinese_name(c.get('name')) for c in self._ptgen.get('cast')[:3] if extract_chinese_name(c.get('name'))]
             if "" in chinese_cast:
                 chinese_cast.remove("")
-            subtitle += f" | 主演：{' / '.join(chinese_cast)}"
+            subtitle += f" | 主演：{'  /  '.join(chinese_cast)}"
         return subtitle
 
     @property

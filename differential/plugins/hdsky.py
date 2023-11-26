@@ -78,6 +78,7 @@ class HDSky(NexusPHP):
         parser.add_argument("--tv_unfinished", type=str, help="是否连载", default=argparse.SUPPRESS)
         parser.add_argument("--use_folder_episode", type=str, help="是否基于文件夹内的集数生成副标题",
                             default=argparse.SUPPRESS)
+        parser.add_argument("--platform", type=str, help="视频源平台，存在时才添加", default=argparse.SUPPRESS)
         return parser
 
     def __init__(
@@ -92,6 +93,7 @@ class HDSky(NexusPHP):
             custom_screenshot_path: str = "",
             tv_unfinished: str = "",
             use_folder_episode: str = "",
+            platform: str = "",
             **kwargs,
     ):
         super().__init__(upload_url="https://hdsky.me/upload.php", **kwargs)
@@ -108,6 +110,7 @@ class HDSky(NexusPHP):
         self.bilibili_save_path = bilibili_save_path
         self.custom_screenshot_path = custom_screenshot_path
         self.tv_unfinished = tv_unfinished
+        self.platform = platform
 
     def _prepare(self):
         ptgen_retry = 2 * self.ptgen_retry
@@ -221,6 +224,8 @@ class HDSky(NexusPHP):
             if "" in chinese_cast:
                 chinese_cast.remove("")
             subtitle += f" | 主演：{'  /  '.join(chinese_cast)}"
+        if self.platform.lower() == "nf":
+            subtitle += f" [内封简繁英等多国字幕]"
         return subtitle
 
     @property
@@ -402,13 +407,15 @@ class HDSky(NexusPHP):
             filename += f"{self._ptgen.get('year').strip()}."
         if self.resolution:
             filename += f"{self.resolution}."
+        if self.platform:
+            filename += f"{self.platform.upper()}."
         filename += "WEB-DL."
         if self.audio_codec:
             filename += f"{self.audio_codec.upper()}."
         if self.quality:
             filename += f"{self.quality}."
         if self.video_codec:
-            filename += f"{self.video_codec.upper()}"
+            filename += f"{self.video_codec.upper() if 'h' in self.video_codec else self.video_codec.lower()}."
         filename += "-HDSWEB"
 
         # filename = re.sub(chinese_mark_re, '', filename)
@@ -471,6 +478,10 @@ class HDSky(NexusPHP):
                     normal_codec = codec_map[commercial_name]
                 else:
                     dolby_codec = codec_map[commercial_name]
+            if track.channels == 6:
+                dolby_codec = "ddp5.1"
+            elif track.channels == 2:
+                dolby_codec = "ddp2.0"
             # TODO: other formats
             # dts: "3",
             # lpcm: "21",

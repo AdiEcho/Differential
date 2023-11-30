@@ -415,7 +415,7 @@ class HDSky(NexusPHP):
         if self.quality:
             filename += f"{self.quality}."
         if self.video_codec:
-            filename += f"{self.video_codec.upper() if 'h' in self.video_codec else self.video_codec.lower()}."
+            filename += f"{self.video_codec.upper() if 'h' in self.video_codec else self.video_codec.lower()}"
         filename += "-HDSWEB"
 
         # filename = re.sub(chinese_mark_re, '', filename)
@@ -478,10 +478,10 @@ class HDSky(NexusPHP):
                     normal_codec = codec_map[commercial_name]
                 else:
                     dolby_codec = codec_map[commercial_name]
-            if track.channels == 6:
-                dolby_codec = "ddp5.1"
-            elif track.channels == 2:
-                dolby_codec = "ddp2.0"
+            if track.channel_s == 6:
+                dolby_codec = "ddp5.1." + dolby_codec if dolby_codec else "dd5.1"
+            elif track.channel_s == 2:
+                dolby_codec = "ddp2.0." + dolby_codec if dolby_codec else "dd2.0"
             # TODO: other formats
             # dts: "3",
             # lpcm: "21",

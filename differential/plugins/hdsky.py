@@ -5,11 +5,14 @@ import requests
 import argparse
 import tempfile
 from PIL import Image
+from io import BytesIO
 from pathlib import Path
 from xpinyin import Pinyin
 from typing import Optional
 from loguru import logger
 from pymediainfo import MediaInfo
+import mozjpeg_lossless_optimization
+from configparser import ConfigParser
 from differential.utils.binary import execute
 from differential.plugins.nexusphp import NexusPHP
 from differential.plugins.bbdown import bili_download
@@ -111,6 +114,7 @@ class HDSky(NexusPHP):
         self.custom_screenshot_path = custom_screenshot_path
         self.tv_unfinished = tv_unfinished
         self.platform = platform
+        self.config_path = "\\".join(kwargs["config"].split("\\")[:-1])
 
     def _prepare(self):
         ptgen_retry = 2 * self.ptgen_retry
@@ -241,6 +245,7 @@ class HDSky(NexusPHP):
             return ""
 
     def _make_screenshots(self) -> Optional[str]:
+        # TODO https://nicelee.top/blog/2021/01/06/python-opencv-video-frame/
         resolution = get_resolution(self._main_file, self._mediainfo)
         duration = get_duration(self._mediainfo)
         if resolution is None or duration is None:
@@ -275,7 +280,18 @@ class HDSky(NexusPHP):
                     )
                     if self.optimize_screenshot:
                         image = Image.open(screenshot_path)
-                        image.save(f"{screenshot_path}", format="PNG", optimized=True)
+                        jpeg_io = BytesIO()
+                        image.convert("RGB").save(jpeg_io, format="JPEG")
+                        jpeg_io.seek(0)
+                        jpeg_bytes = jpeg_io.read()
+                        optimized_jpeg_bytes = mozjpeg_lossless_optimization.optimize(jpeg_bytes)
+                        # w, h = image.size
+                        # new_width = 1920
+                        # new_height = int(1920 * h / w)
+                        # resize_img = image.resize((new_width, new_height))
+                        # image.save(screenshot_path, format="PNG", optimized=True)
+                        with open(screenshot_path, "wb") as f:
+                            f.write(optimized_jpeg_bytes)
         else:
             for f in Path(tempfile.gettempdir()).glob(
                     "Differential.screenshots.{}.*".format(self.image_hosting.value)
@@ -308,7 +324,18 @@ class HDSky(NexusPHP):
                     )
                     if self.optimize_screenshot:
                         image = Image.open(screenshot_path)
-                        image.save(f"{screenshot_path}", format="PNG", optimized=True)
+                        jpeg_io = BytesIO()
+                        image.convert("RGB").save(jpeg_io, format="JPEG")
+                        jpeg_io.seek(0)
+                        jpeg_bytes = jpeg_io.read()
+                        optimized_jpeg_bytes = mozjpeg_lossless_optimization.optimize(jpeg_bytes)
+                        # w, h = image.size
+                        # new_width = 1920
+                        # new_height = int(1920 * h / w)
+                        # resize_img = image.resize((new_width, new_height))
+                        # image.save(screenshot_path, format="PNG", optimized=True)
+                        with open(screenshot_path, "wb") as f:
+                            f.write(optimized_jpeg_bytes)
         return temp_dir
 
     @property
@@ -377,7 +404,7 @@ class HDSky(NexusPHP):
             season = f"S0{season}" \
                 if len(season) == 1 \
                 else f"S{season}"
-        elif self._ptgen.get("current_season"):
+        elif self._ptgen.get("current_season") and self._imdb.get("@type", "") != "Movie":
             season = f"S0{self._ptgen.get('current_season').strip()}" \
                 if len(self._ptgen.get('current_season').strip()) == 1 \
                 else f"S{self._ptgen.get('current_season').strip()}"
@@ -411,18 +438,51 @@ class HDSky(NexusPHP):
             filename += f"{self.platform.upper()}."
         filename += "WEB-DL."
         if self.audio_codec:
-            filename += f"{self.audio_codec.upper()}."
-        if self.quality:
-            filename += f"{self.quality}."
+            filename += f"{self.audio_codec}."
         if self.video_codec:
-            filename += f"{self.video_codec.upper() if 'h' in self.video_codec else self.video_codec.lower()}"
+            filename += f"{self.video_codec.replace('x', 'H') if self.platform != '' else self.video_codec}."
+        if self.quality:
+            filename += f"{self.quality}"
         filename += "-HDSWEB"
 
         # filename = re.sub(chinese_mark_re, '', filename)
         filename = re.sub(windows_special_char, '', filename)
+        filename = filename.replace(".-", "-")
         if self.generate_name:
-            with open(f"{self._main_file.parent}/filename.txt", "w", encoding="utf-8") as f:
-                f.write(filename)
+            # TODO 将文件夹内的文件名按照filename格式化
+            if self._imdb.get("@type", "") == "Movie":
+                for _, _, filenames in os.walk(self._main_file.parent):
+                    _filename = filenames[0]
+                    origin_file_extension = _filename.split(".")[-1]
+                    os.rename(os.path.join(self._main_file.parent, _filename), os.path.join(self._main_file.parent, f"{filename}.{origin_file_extension}"))
+                os.rename(self._main_file.parent, os.path.join(self._main_file.parent.parent, filename))
+                config_path = f"{self.config_path}\\hdsky_netflix.ini"
+                config = ConfigParser()
+                config.read_file(open(config_path, "r", encoding="utf-8"))
+                config.set("HDSky", "url", self.url)
+                config.set("HDSky", "folder", os.path.join(self._main_file.parent.parent, filename))
+                config.write(open(config_path, "w", encoding="utf-8"))
+            elif self._imdb.get("@type", "") == "TVSeries":
+                for _, _, filenames in os.walk(self._main_file.parent):
+                    for _filename in filenames:
+                        origin_file_extension = _filename.split(".")[-1]
+                        result = re.findall(r"\.S(\d+)E(\d+)\.", _filename)
+                        _season = result[0][0]
+                        _episodes = result[0][1]
+                        result_split = filename.split(f".S{_season}.")
+                        new_filename = f".S{_season}E{_episodes}.".join(result_split)
+                        new_filename += f".{origin_file_extension}"
+                        os.rename(os.path.join(self._main_file.parent, _filename), os.path.join(self._main_file.parent, new_filename))
+                os.rename(self._main_file.parent, os.path.join(self._main_file.parent.parent, filename))
+                config_path = f"{self.config_path}\\hdsky_netflix.ini"
+                config = ConfigParser()
+                config.read_file(open(config_path, "r", encoding="utf-8"))
+                config.set("HDSky", "url", self.url)
+                config.set("HDSky", "folder", os.path.join(self._main_file.parent.parent, filename))
+                config.write(open(config_path, "w", encoding="utf-8"))
+            else:
+                with open(f"{self._main_file.parent}/filename.txt", "w", encoding="utf-8") as f:
+                    f.write(filename)
             exit(0)
         return filename
 
@@ -455,16 +515,16 @@ class HDSky(NexusPHP):
     @property
     def audio_codec(self):
         codec_map = {
-            "Dolby Digital Plus": "ddp",
-            "Dolby Digital": "dd",
-            "DTS-HD Master Audio": "dtshdma",
-            "Dolby Digital Plus with Dolby Atmos": "atmos",
-            "Dolby TrueHD": "truehd",
-            "Dolby TrueHD with Dolby Atmos": "truehd",
-            "AAC": "aac",
-            "HE-AAC": "aac",
-            "Audio Coding 3": "ac3",
-            "Free Lossless Audio Codec": "flac",
+            "Dolby Digital Plus": "DDP",
+            "Dolby Digital": "DD",
+            "DTS-HD Master Audio": "DTSHDMA",
+            "Dolby Digital Plus with Dolby Atmos": "Atmos",
+            "Dolby TrueHD": "TrueHD",
+            "Dolby TrueHD with Dolby Atmos": "TrueHD",
+            "AAC": "AAC",
+            "HE-AAC": "AAC",
+            "Audio Coding 3": "AC3",
+            "Free Lossless Audio Codec": "FLAC",
         }
         normal_codec_list = ["Audio Coding 3", "Free Lossless Audio Codec", "AAC", "HE-AAC"]
         dolby_codec = ""
@@ -479,9 +539,9 @@ class HDSky(NexusPHP):
                 else:
                     dolby_codec = codec_map[commercial_name]
             if track.channel_s == 6:
-                dolby_codec = "ddp5.1." + dolby_codec if dolby_codec else "dd5.1"
+                dolby_codec = "DDP5.1." + dolby_codec if dolby_codec and dolby_codec != "DDP" else "DDP5.1"
             elif track.channel_s == 2:
-                dolby_codec = "ddp2.0." + dolby_codec if dolby_codec else "dd2.0"
+                dolby_codec = "DDP2.0." + dolby_codec if dolby_codec and dolby_codec != "DDP" else "DDP2.0"
             # TODO: other formats
             # dts: "3",
             # lpcm: "21",
@@ -499,9 +559,9 @@ class HDSky(NexusPHP):
             if track.encoded_library_name:
                 return track.encoded_library_name
             if track.commercial_name == "AVC":
-                return "h264"
+                return "H264"
             if track.commercial_name == "HEVC":
-                return "h265"
+                return "H265"
         #  h264: "AVC/H.264",
         #  hevc: "HEVC",
         #  x264: "x264",

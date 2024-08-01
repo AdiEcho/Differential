@@ -1,4 +1,4 @@
-cn2an~=0.8.1
+cn2an~=0.5.22
 loguru~=0.7.2
 Pillow~=10.0.1
 pymediainfo~=6.0.1
@@ -8,3 +8,6 @@ lxml~=4.9.3
 bencode.py
 setuptools~=68.2.0
 xpinyin~=0.7.6
+cn2an
+xpinyin
+tqdm~=4.66.1

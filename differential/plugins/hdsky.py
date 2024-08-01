@@ -82,6 +82,7 @@ class HDSky(NexusPHP):
         parser.add_argument("--use_folder_episode", type=str, help="是否基于文件夹内的集数生成副标题",
                             default=argparse.SUPPRESS)
         parser.add_argument("--platform", type=str, help="视频源平台，存在时才添加", default=argparse.SUPPRESS)
+        parser.add_argument("--custom_type", type=str, help="自定义文件夹类型（电影电视剧）", default=argparse.SUPPRESS)
         return parser
 
     def __init__(
@@ -97,12 +98,14 @@ class HDSky(NexusPHP):
             tv_unfinished: str = "",
             use_folder_episode: str = "",
             platform: str = "",
+            custom_type: str = "",
             **kwargs,
     ):
+        enable_args = ("true", "True", "Yes", "yes")
         super().__init__(upload_url="https://hdsky.me/upload.php", **kwargs)
         self.generate_name: bool = False
         self.custom_format_path = f"file://{custom_format_path}"
-        if generate_name == "true" or generate_name == "True" or generate_name == "yes" or generate_name == "Yes":
+        if generate_name in enable_args:
             self.generate_name: bool = True
             self.screenshot_count = 0
         self.custom_aka_name = custom_aka_name
@@ -115,6 +118,7 @@ class HDSky(NexusPHP):
         self.tv_unfinished = tv_unfinished
         self.platform = platform
         self.config_path = "\\".join(kwargs["config"].split("\\")[:-1])
+        self.custom_type = custom_type
 
     def _prepare(self):
         ptgen_retry = 2 * self.ptgen_retry
@@ -219,10 +223,10 @@ class HDSky(NexusPHP):
                 subtitle += (
                     f" | 导演：{'/'.join([d.get('name') for d in self._ptgen.get('director')])}"
                 )
-            if self._ptgen.get("writer"):
-                subtitle += (
-                    f" | 编剧：{'/'.join([w.get('name') for w in self._ptgen.get('writer')])}"
-                )
+            # if self._ptgen.get("writer"):
+            #     subtitle += (
+            #         f" | 编剧：{'/'.join([w.get('name') for w in self._ptgen.get('writer')])}"
+            #     )
         if self._ptgen.get("cast"):
             chinese_cast = [extract_chinese_name(c.get('name')) for c in self._ptgen.get('cast')[:3] if extract_chinese_name(c.get('name'))]
             if "" in chinese_cast:
@@ -238,10 +242,14 @@ class HDSky(NexusPHP):
         params = {
             "url": self.douban_url
         }
-        response = requests.get(url, params=params)
-        if response.ok:
-            return response.json().get("data", {}).get("format", "")
-        else:
+        try:
+            response = requests.get(url, params=params)
+            if response.ok:
+                return response.json().get("data", {}).get("format", "")
+            else:
+                return ""
+        except Exception as e:
+            logger.warning(f"获取iyuu ptgen 失败: {e}")
             return ""
 
     def _make_screenshots(self) -> Optional[str]:
@@ -449,30 +457,32 @@ class HDSky(NexusPHP):
         filename = re.sub(windows_special_char, '', filename)
         filename = filename.replace(".-", "-")
         if self.generate_name:
-            # TODO 将文件夹内的文件名按照filename格式化
-            if self._imdb.get("@type", "") == "Movie":
+            # 将文件夹内的文件名按照filename格式化
+            if self._imdb.get("@type", "") == "Movie" or self.custom_type.lower() == "movie":
                 for _, _, filenames in os.walk(self._main_file.parent):
                     _filename = filenames[0]
                     origin_file_extension = _filename.split(".")[-1]
                     os.rename(os.path.join(self._main_file.parent, _filename), os.path.join(self._main_file.parent, f"{filename}.{origin_file_extension}"))
                 os.rename(self._main_file.parent, os.path.join(self._main_file.parent.parent, filename))
-                config_path = f"{self.config_path}\\hdsky_netflix.ini"
+                platform = self.platform if self.platform else "netflix"
+                config_path = f"{self.config_path}\\hdsky_{platform.lower()}.ini"
                 config = ConfigParser()
                 config.read_file(open(config_path, "r", encoding="utf-8"))
                 config.set("HDSky", "url", self.url)
                 config.set("HDSky", "folder", os.path.join(self._main_file.parent.parent, filename))
                 config.write(open(config_path, "w", encoding="utf-8"))
-            elif self._imdb.get("@type", "") == "TVSeries":
+            elif self._imdb.get("@type", "") == "TVSeries" or self.custom_type.lower() == "tv":
                 for _, _, filenames in os.walk(self._main_file.parent):
                     for _filename in filenames:
                         origin_file_extension = _filename.split(".")[-1]
                         result = re.findall(r"\.S(\d+)E(\d+)\.", _filename)
-                        _season = result[0][0]
-                        _episodes = result[0][1]
-                        result_split = filename.split(f".S{_season}.")
-                        new_filename = f".S{_season}E{_episodes}.".join(result_split)
-                        new_filename += f".{origin_file_extension}"
-                        os.rename(os.path.join(self._main_file.parent, _filename), os.path.join(self._main_file.parent, new_filename))
+                        if result:
+                            _season = result[0][0]
+                            _episodes = result[0][1]
+                            result_split = filename.split(f".S{_season}.")
+                            new_filename = f".S{_season}E{_episodes}.".join(result_split)
+                            new_filename += f".{origin_file_extension}"
+                            os.rename(os.path.join(self._main_file.parent, _filename), os.path.join(self._main_file.parent, new_filename))
                 os.rename(self._main_file.parent, os.path.join(self._main_file.parent.parent, filename))
                 config_path = f"{self.config_path}\\hdsky_netflix.ini"
                 config = ConfigParser()

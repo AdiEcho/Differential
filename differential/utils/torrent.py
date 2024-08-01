@@ -1,6 +1,6 @@
 from pathlib import Path
 from typing import List, Optional
-
+from tqdm import tqdm
 import bencodepy
 from torf import Torrent
 from loguru import logger
@@ -37,7 +37,7 @@ def remake_torrent(path: Path, tracker: str, old_torrent: str) -> Optional[bytes
 
 
 def make_torrent_progress(torrent, filepath, pieces_done, pieces_total):
-    logger.info(f'制种进度: {pieces_done/pieces_total*100:3.0f} %')
+    tqdm.write(f'制种进度: {pieces_done/pieces_total*100:3.0f} %', end='\r')
 
 
 def make_torrent(path: Path, tracker: str, prefix: str = None, reuse_torrent: bool = True, from_torrent: str = None):

@@ -41,6 +41,10 @@ pip3 install Differential
 pip.exe install Differential
 ```
 
+```PowerShell
+pip install "https://github.com/AdiEcho/Differential.git"
+```
+
 ## Mac OS
 按照[这个](https://www.mono-project.com/docs/getting-started/install/mac/)页面，安装Mono
 
